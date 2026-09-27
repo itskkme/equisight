@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EquiSight — AI Equity Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e17;
+  --bg2: #0f1521;
+  --bg3: #141c2e;
+  --panel: #111827;
+  --panel2: #1a2236;
+  --border: #1e2d47;
+  --border2: #243450;
+  --accent: #2563eb;
+  --accent2: #3b82f6;
+  --accent-glow: rgba(37,99,235,0.18);
+  --green: #10b981;
+  --green-dim: rgba(16,185,129,0.12);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.12);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.12);
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --display: 'Syne', sans-serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; overflow: hidden; }
+
+/* ── LAYOUT ── */
+#app { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 52px 1fr; height: 100vh; }
+#topbar { grid-column: 1 / -1; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 10; }
+#sidebar { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 16px 0; }
+#main { overflow-y: auto; background: var(--bg); }
+
+/* ── TOP BAR ── */
+.logo { font-family: var(--display); font-weight: 800; font-size: 17px; letter-spacing: -0.3px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 10px var(--accent2); }
+.logo span { color: var(--accent2); }
+.topbar-badge { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text3); background: var(--bg3); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px; }
+.api-key-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.api-key-wrap label { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+#geminiKey { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: 6px; width: 220px; outline: none; }
+#geminiKey:focus { border-color: var(--accent); }
+.save-key-btn { background: var(--accent); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: var(--mono); }
+.save-key-btn:hover { background: var(--accent2); }
+#key-status { font-size: 10px; font-family: var(--mono); }
+.key-ok { color: var(--green); }
+.key-no { color: var(--text3); }
+
+/* ── SIDEBAR ── */
+.nav-section { padding: 6px 16px 4px; font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 8px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 16px; cursor: pointer; font-size: 13px; color: var(--text2); border-left: 3px solid transparent; transition: all .15s; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent2); border-left-color: var(--accent); }
+.nav-icon { font-size: 14px; width: 18px; text-align: center; }
+
+/* ── MAIN VIEWS ── */
+.view { display: none; padding: 28px 32px; }
+.view.active { display: block; }
+
+/* ── PAGE HEADER ── */
+.page-header { margin-bottom: 24px; }
+.page-title { font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--text); }
+.page-sub { font-size: 12px; color: var(--text3); margin-top: 4px; font-family: var(--mono); }
+
+/* ── CARDS ── */
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+.card-title { font-family: var(--mono); font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+
+/* ── TABS ── */
+.tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: var(--panel); border-radius: 8px; padding: 4px; border: 1px solid var(--border); width: fit-content; }
+.tab { padding: 7px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--text3); font-family: var(--mono); transition: all .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--accent); color: #fff; }
+
+/* ── INPUTS ── */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; font-family: var(--mono); color: var(--text3); }
+.field input, .field select { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 8px 12px; border-radius: 6px; outline: none; }
+.field input:focus, .field select:focus { border-color: var(--accent); }
+textarea.fin-input { width: 100%; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 12px; border-radius: 8px; resize: vertical; outline: none; line-height: 1.6; }
+textarea.fin-input:focus { border-color: var(--accent); }
+.placeholder-hint { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 6px; line-height: 1.7; }
+
+/* ── BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 7px; font-size: 13px; cursor: pointer; border: none; font-family: var(--sans); font-weight: 500; transition: all .15s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent2); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── ANALYSIS OUTPUT ── */
+#analysis-output, #compare-output, #analyst-output { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-top: 20px; display: none; }
+#analysis-output.visible, #compare-output.visible, #analyst-output.visible { display: block; }
+.output-content { font-size: 13px; line-height: 1.8; color: var(--text); }
+.output-content h2 { font-family: var(--display); font-size: 16px; font-weight: 700; color: var(--accent2); margin: 20px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.output-content h3 { font-family: var(--display); font-size: 14px; font-weight: 600; color: var(--text); margin: 14px 0 6px; }
+.output-content strong { color: var(--text); font-weight: 600; }
+.output-content ul { padding-left: 18px; margin: 6px 0 10px; }
+.output-content li { margin-bottom: 4px; color: var(--text2); }
+.output-content p { margin-bottom: 8px; color: var(--text2); }
+.output-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; font-family: var(--mono); }
+.output-content th { background: var(--bg3); color: var(--accent2); padding: 8px 12px; text-align: left; font-weight: 500; border-bottom: 1px solid var(--border2); }
+.output-content td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+.output-content tr:last-child td { border-bottom: none; }
+.output-content tr:hover td { background: var(--bg3); }
+.tag-buy { background: var(--green-dim); color: var(--green); padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.tag-hold { background: var(--amber-dim); color: var(--amber); padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.tag-sell { background: var(--red-dim); color: var(--red); padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 11px; font-weight: 600; }
+
+/* ── LOADING ── */
+.loading-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+.loading-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent)); background-size: 200%; animation: shimmer 1.2s infinite; border-radius: 2px; }
+@keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+.loading-text { font-family: var(--mono); font-size: 12px; color: var(--text3); text-align: center; margin-top: 12px; }
+
+/* ── METRICS ROW ── */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.metric-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.metric-label { font-family: var(--mono); font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; }
+.metric-val { font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); margin-top: 4px; }
+.metric-val.green { color: var(--green); }
+.metric-val.red { color: var(--red); }
+.metric-change { font-size: 11px; font-family: var(--mono); color: var(--text3); margin-top: 2px; }
+
+/* ── COMPARE STOCKS ── */
+.stock-inputs { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.stock-row { display: flex; gap: 10px; align-items: center; }
+.stock-row input { flex: 1; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 8px 12px; border-radius: 6px; outline: none; }
+.stock-row input:focus { border-color: var(--accent); }
+.remove-stock { background: var(--red-dim); color: var(--red); border: none; border-radius: 5px; padding: 6px 10px; cursor: pointer; font-size: 14px; line-height: 1; }
+
+/* ── CHAT ── */
+#chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 52px); }
+#chat-messages { flex: 1; overflow-y: auto; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px; }
+#chat-input-bar { padding: 16px 32px; background: var(--bg2); border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-end; }
+#chat-input { flex: 1; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--sans); font-size: 13px; padding: 12px 16px; border-radius: 8px; outline: none; resize: none; max-height: 120px; line-height: 1.5; }
+#chat-input:focus { border-color: var(--accent); }
+.chat-msg { max-width: 82%; display: flex; flex-direction: column; gap: 4px; }
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.ai { align-self: flex-start; }
+.chat-bubble { padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 1.7; }
+.chat-msg.user .chat-bubble { background: var(--accent); color: #fff; border-radius: 10px 10px 2px 10px; }
+.chat-msg.ai .chat-bubble { background: var(--panel); border: 1px solid var(--border); color: var(--text2); border-radius: 10px 10px 10px 2px; }
+.chat-msg.ai .chat-bubble h2 { font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--accent2); margin: 14px 0 6px; }
+.chat-msg.ai .chat-bubble h3 { font-family: var(--display); font-size: 13px; color: var(--text); margin: 10px 0 4px; }
+.chat-msg.ai .chat-bubble ul { padding-left: 16px; }
+.chat-msg.ai .chat-bubble li { color: var(--text2); margin-bottom: 3px; }
+.chat-msg.ai .chat-bubble strong { color: var(--text); }
+.chat-msg.ai .chat-bubble table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; margin: 8px 0; }
+.chat-msg.ai .chat-bubble th { background: var(--bg3); color: var(--accent2); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border2); }
+.chat-msg.ai .chat-bubble td { padding: 5px 10px; border-bottom: 1px solid var(--border); }
+.chat-sender { font-family: var(--mono); font-size: 10px; color: var(--text3); padding: 0 4px; }
+
+/* ── HOME ── */
+.home-hero { text-align: center; padding: 48px 24px 32px; }
+.hero-title { font-family: var(--display); font-size: 40px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+.hero-title span { color: var(--accent2); }
+.hero-sub { font-size: 14px; color: var(--text3); margin-top: 12px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
+.feature-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: left; cursor: pointer; transition: all .15s; }
+.feature-card:hover { border-color: var(--accent); background: var(--panel2); transform: translateY(-2px); }
+.feature-icon { font-size: 24px; margin-bottom: 10px; }
+.feature-name { font-family: var(--display); font-weight: 700; font-size: 14px; color: var(--text); }
+.feature-desc { font-size: 12px; color: var(--text3); margin-top: 5px; line-height: 1.6; }
+.disclaimer { font-size: 10px; color: var(--text3); font-family: var(--mono); text-align: center; margin-top: 24px; line-height: 1.7; padding: 12px 24px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="logo"><div class="logo-dot"></div>Equi<span>Sight</span></div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">AI Equity Research Platform</div>
+    <div class="api-key-wrap">
+      <label>GEMINI API KEY</label>
+      <input type="password" id="geminiKey" placeholder="AIza...">
+      <button class="save-key-btn" onclick="saveKey()">Save</button>
+      <span id="key-status" class="key-no">Not set</span>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="showView('home',this)"><span class="nav-icon">🏠</span> Dashboard</div>
+    <div class="nav-section">Analysis</div>
+    <div class="nav-item" onclick="showView('financials',this)"><span class="nav-icon">📊</span> Financials</div>
+    <div class="nav-item" onclick="showView('compare',this)"><span class="nav-icon">⚖️</span> Compare</div>
+    <div class="nav-section">Analyst</div>
+    <div class="nav-item" onclick="showView('analyst',this)"><span class="nav-icon">🤖</span> AI Analyst</div>
+    <div class="nav-item" onclick="showView('chat',this)"><span class="nav-icon">💬</span> Chat</div>
+    <div style="margin-top:auto; padding: 16px; font-size:10px; color:var(--text3); font-family:var(--mono); line-height:1.7;">
+      Powered by Gemini AI<br>For informational use only.<br>Not financial advice.
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- HOME -->
+    <div class="view active" id="view-home">
+      <div class="home-hero">
+        <div class="hero-title">Your Personal<br><span>Equity Research</span> Desk</div>
+        <div class="hero-sub">Institutional-grade fundamental analysis powered by Gemini AI. Analyze financials, compare stocks, and get investment insights.</div>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card" onclick="showViewById('financials')">
+          <div class="feature-icon">📊</div>
+          <div class="feature-name">Financial Statement Analyzer</div>
+          <div class="feature-desc">Paste any balance sheet, income statement, or cash flow statement and get a deep-dive with ratios, red flags, and quality assessment.</div>
+        </div>
+        <div class="feature-card" onclick="showViewById('compare')">
+          <div class="feature-icon">⚖️</div>
+          <div class="feature-name">Stock Comparator</div>
+          <div class="feature-desc">Compare 2–5 stocks side by side with valuation multiples, profitability metrics, and a ranked investment recommendation.</div>
+        </div>
+        <div class="feature-card" onclick="showViewById('chat')">
+          <div class="feature-icon">🤖</div>
+          <div class="feature-name">AI Equity Analyst</div>
+          <div class="feature-desc">Chat with your personal senior equity research analyst. Ask anything about stocks, sectors, valuation, or strategy.</div>
+        </div>
+      </div>
+      <div class="disclaimer">
+        EquiSight is for informational and educational purposes only. It does not constitute financial advice or a recommendation to buy, hold, or sell any security. Always consult a registered financial advisor before making investment decisions.
+      </div>
+    </div>
+
+    <!-- FINANCIALS -->
+    <div class="view" id="view-financials">
+      <div class="page-header">
+        <div class="page-title">Financial Statement Analyzer</div>
+        <div class="page-sub">Paste raw financial data → Get institutional-quality analysis</div>
+      </div>
+      <div class="tab-bar">
+        <div class="tab active" onclick="setFinTab('income',this)">Income Statement</div>
+        <div class="tab" onclick="setFinTab('balance',this)">Balance Sheet</div>
+        <div class="tab" onclick="setFinTab('cashflow',this)">Cash Flow</div>
+        <div class="tab" onclick="setFinTab('all',this)">Full Analysis</div>
+      </div>
+      <div class="card">
+        <div class="field-row">
+          <div class="field">
+            <label>Company Name</label>
+            <input type="text" id="fin-company" placeholder="e.g. Reliance Industries">
+          </div>
+          <div class="field">
+            <label>Sector / Industry</label>
+            <input type="text" id="fin-sector" placeholder="e.g. Energy / Oil & Gas">
+          </div>
+          <div class="field">
+            <label>Currency</label>
+            <input type="text" id="fin-currency" placeholder="e.g. INR Crores / USD Millions">
+          </div>
+          <div class="field">
+            <label>Period</label>
+            <input type="text" id="fin-period" placeholder="e.g. FY2022, FY2023, FY2024">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label id="fin-data-label">Income Statement Data</label>
+          <textarea class="fin-input" id="fin-data" rows="10" placeholder="Paste your financial data here. You can paste tables, CSV, or plain text data.
+
+Example (Income Statement):
+Revenue: FY22: 7,92,756 | FY23: 8,76,150 | FY24: 9,74,864 (₹ Crores)
+Gross Profit: 1,52,340 | 1,67,890 | 1,89,240
+EBITDA: 1,42,689 | 1,56,200 | 1,75,000
+PAT: 60,705 | 73,670 | 79,020
+EPS: 90.1 | 109.5 | 117.4
+
+Or paste entire table directly from screener.in, Moneycontrol, etc."></textarea>
+          <div class="placeholder-hint">Tip: Copy-paste directly from Screener.in, Moneycontrol, NSE/BSE filings, or any annual report table.</div>
+        </div>
+        <button class="btn btn-primary" onclick="analyzeFinancials()" id="fin-btn">
+          <span>🔍</span> Run Analysis
+        </button>
+      </div>
+      <div id="analysis-output">
+        <div id="analysis-loading" style="display:none">
+          <div class="loading-bar"><div class="loading-fill"></div></div>
+          <div class="loading-text">Analyzing financial statements...</div>
+        </div>
+        <div class="output-content" id="analysis-result"></div>
+      </div>
+    </div>
+
+    <!-- COMPARE -->
+    <div class="view" id="view-compare">
+      <div class="page-header">
+        <div class="page-title">Stock Comparator</div>
+        <div class="page-sub">Add 2–5 stocks with their data for a side-by-side institutional analysis</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Stock Data Inputs</div>
+        <div class="field-row">
+          <div class="field">
+            <label>Sector / Industry</label>
+            <input type="text" id="cmp-sector" placeholder="e.g. IT Services / Banking / FMCG">
+          </div>
+          <div class="field">
+            <label>Currency & Unit</label>
+            <input type="text" id="cmp-currency" placeholder="e.g. INR Crores">
+          </div>
+        </div>
+        <div class="stock-inputs" id="stock-inputs">
+          <div class="stock-row">
+            <input placeholder="Stock 1 — Company name + key metrics (Revenue, Margins, EPS, P/E, D/E, ROE...)" id="s0">
+          </div>
+          <div class="stock-row">
+            <input placeholder="Stock 2 — Company name + key metrics" id="s1">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-outline btn-sm" onclick="addStock()">+ Add Stock</button>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Additional Context / Investment Question (optional)</label>
+          <textarea class="fin-input" id="cmp-context" rows="3" placeholder="e.g. Which is the best for a 3-year value investment? Focus on return ratios and debt levels."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="compareStocks()" id="cmp-btn"><span>⚖️</span> Compare Stocks</button>
+      </div>
+      <div id="compare-output">
+        <div id="compare-loading" style="display:none">
+          <div class="loading-bar"><div class="loading-fill"></div></div>
+          <div class="loading-text">Building comparative analysis...</div>
+        </div>
+        <div class="output-content" id="compare-result"></div>
+      </div>
+    </div>
+
+    <!-- ANALYST -->
+    <div class="view" id="view-analyst">
+      <div class="page-header">
+        <div class="page-title">Quick Analyst Query</div>
+        <div class="page-sub">Get a structured investment thesis on any stock or topic</div>
+      </div>
+      <div class="card">
+        <div class="field-row">
+          <div class="field">
+            <label>Stock / Topic</label>
+            <input type="text" id="an-stock" placeholder="e.g. HDFC Bank, Zomato, Nifty IT Sector">
+          </div>
+          <div class="field">
+            <label>Analysis Type</label>
+            <select id="an-type">
+              <option value="full">Full Investment Thesis (Bull/Base/Bear)</option>
+              <option value="moat">Economic Moat Assessment</option>
+              <option value="valuation">Valuation Commentary</option>
+              <option value="redflag">Red Flags & Risk Scan</option>
+              <option value="sector">Sector Deep Dive</option>
+              <option value="compare-quick">Quick Peer Comparison</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Data / Context (paste any available financials or information)</label>
+          <textarea class="fin-input" id="an-data" rows="8" placeholder="Paste any financials, news, or context you want analyzed. The more data you provide, the sharper the analysis.
+
+If no data is pasted, EquiSight will analyze based on general knowledge and publicly known information about the company."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="runAnalyst()" id="an-btn"><span>📈</span> Generate Analysis</button>
+      </div>
+      <div id="analyst-output">
+        <div id="analyst-loading" style="display:none">
+          <div class="loading-bar"><div class="loading-fill"></div></div>
+          <div class="loading-text">Constructing investment thesis...</div>
+        </div>
+        <div class="output-content" id="analyst-result"></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="view" id="view-chat" style="padding:0">
+      <div id="chat-wrap">
+        <div id="chat-messages">
+          <div class="chat-msg ai">
+            <div class="chat-sender">EquiSight AI — Senior Equity Research Analyst</div>
+            <div class="chat-bubble">
+              <strong>Welcome. I'm your personal Equity Research Analyst.</strong><br><br>
+              I can help you with:<br>
+              • Deep-dive analysis of financial statements (P&L, Balance Sheet, Cash Flow)<br>
+              • Stock comparison and relative valuation<br>
+              • Investment thesis construction — Bull / Base / Bear cases<br>
+              • Accounting red flag detection<br>
+              • Sector analysis and competitive positioning<br>
+              • Intrinsic value commentary & ratio analysis<br><br>
+              Paste any financial data, ask any stock question, or name a company and I'll get to work.
+            </div>
+          </div>
+        </div>
+        <div id="chat-input-bar">
+          <textarea id="chat-input" placeholder="Ask anything — paste financials, ask about a stock, or request an analysis..." rows="1" onkeydown="chatKeydown(event)" oninput="autoResize(this)"></textarea>
+          <button class="btn btn-primary" onclick="sendChat()" id="chat-send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const SYSTEM_PROMPT = `You are EquiSight AI, a Senior Equity Research Analyst and Fundamental Investment Analyst with 20+ years of experience at a top-tier investment bank. You specialize in deep fundamental analysis, financial statement dissection, and investment thesis construction across all sectors and geographies — with particular expertise in Indian (NSE/BSE) and global equity markets.
+
+IDENTITY: You are EquiSight AI. Communicate like a Wall Street/Dalal Street sell-side analyst writing for institutional investors: precise, data-driven, structured, and opinionated where warranted. Use professional financial terminology correctly and consistently. Always substantiate every claim with data, ratios, or logical reasoning. Never fabricate numbers. If data is missing, state what is missing.
+
+CORE CAPABILITIES:
+1. INCOME STATEMENT ANALYSIS: Revenue trend analysis (YoY/QoQ growth), Gross Margin, EBITDA Margin, Operating Margin, Net Margin, Operating leverage, SG&A/R&D as % of revenue, EPS analysis (basic and diluted), quality of earnings, one-time items identification, revenue quality (organic vs. inorganic).
+
+2. BALANCE SHEET ANALYSIS: Liquidity ratios (Current, Quick, Cash), Solvency (D/E, Debt/EBITDA, Interest Coverage), Asset quality (Goodwill %, intangibles), Working capital (DSO, DIO, DPO, CCC), Capital structure efficiency, Book value per share, P/B analysis, off-balance-sheet risks.
+
+3. CASH FLOW ANALYSIS: OCF vs. Net Income divergence (earnings quality), FCF calculation, FCF Yield, FCF Conversion Rate, CapEx analysis (maintenance vs. growth), financing activities (buybacks, dividends), cash burn assessment.
+
+4. STOCK COMPARISON: Side-by-side table with Revenue, Revenue Growth, Gross Margin, EBITDA Margin, Net Margin, EPS, P/E, P/S, EV/EBITDA, EV/Revenue, FCF Yield, D/EBITDA, ROE, ROCE, ROIC. Competitive positioning, relative valuation, investment ranking.
+
+5. INVESTMENT ANALYST: Bull Case / Base Case / Bear Case, Porter's Five Forces, MOAT analysis (Wide/Narrow/None), management quality signals, DCF logic, comparable multiples, red flag identification, sector-specific KPIs.
+
+OUTPUT FORMAT — ALWAYS use this structure:
+📊 EXECUTIVE SUMMARY (3-5 critical takeaways)
+📁 DETAILED ANALYSIS (clearly labeled sections with tables where useful)
+⚠️ KEY RISKS (3-5 specific, data-backed risks)
+✅ INVESTMENT VERDICT (BUY / HOLD / SELL / WATCH with rationale)
+❓ DATA GAPS (what additional data would improve analysis)
+
+Use markdown tables for comparative/multi-metric data. Use bold for section headers. Calculate all ratios yourself — never ask the user to calculate. Be specific, never vague. Flag accounting red flags and data inconsistencies when spotted. Note all assumptions clearly.
+
+DISCLAIMER: Append to first response only: "⚠️ *This analysis is by EquiSight AI for informational purposes only. Not financial advice. Consult a registered financial advisor before investing.*"`;
+
+let geminiKey = localStorage.getItem('equisight_key') || '';
+let chatHistory = [];
+let stockCount = 2;
+let currentFinTab = 'income';
+
+// Key mgmt
+if (geminiKey) {
+  document.getElementById('geminiKey').value = geminiKey;
+  document.getElementById('key-status').textContent = 'Set ✓';
+  document.getElementById('key-status').className = 'key-ok';
+}
+function saveKey() {
+  geminiKey = document.getElementById('geminiKey').value.trim();
+  localStorage.setItem('equisight_key', geminiKey);
+  if (geminiKey) {
+    document.getElementById('key-status').textContent = 'Set ✓';
+    document.getElementById('key-status').className = 'key-ok';
+  }
+}
+
+function showView(id, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+function showViewById(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(id === 'financials' ? 'financ' : id === 'compare' ? 'compare' : 'chat')) n.classList.add('active');
+  });
+}
+
+function setFinTab(tab, el) {
+  currentFinTab = tab;
+  document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const labels = { income: 'Income Statement Data', balance: 'Balance Sheet Data', cashflow: 'Cash Flow Statement Data', all: 'All Financial Statements (paste all together)' };
+  document.getElementById('fin-data-label').textContent = labels[tab];
+  const placeholders = {
+    income: 'Paste Income Statement data:\nRevenue, Gross Profit, EBITDA, Operating Profit, PAT, EPS for 2-4 years...',
+    balance: 'Paste Balance Sheet data:\nTotal Assets, Current Assets, Cash, Inventory, Total Debt, Equity, Goodwill for 2-4 years...',
+    cashflow: 'Paste Cash Flow data:\nCFO, CFI, CFF, Free Cash Flow, CapEx for 2-4 years...',
+    all: 'Paste all three statements together for a complete 360° analysis...'
+  };
+  document.getElementById('fin-data').placeholder = placeholders[tab];
+}
+
+function addStock() {
+  if (stockCount >= 5) return;
+  const wrap = document.getElementById('stock-inputs');
+  const row = document.createElement('div');
+  row.className = 'stock-row';
+  row.innerHTML = `<input placeholder="Stock ${stockCount+1} — Company name + key metrics" id="s${stockCount}"><button class="remove-stock" onclick="this.parentElement.remove()">✕</button>`;
+  wrap.appendChild(row);
+  stockCount++;
+}
+
+async function callGemini(prompt) {
+  if (!geminiKey) throw new Error('No Gemini API key set. Please enter your key in the top bar.');
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: SYSTEM_PROMPT + '\n\n' + prompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 4096 }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'Gemini API error');
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response received.';
+}
+
+function markdownToHtml(md) {
+  return md
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^#{1} (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^#{2} (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^#{3} (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^#{4} (.*$)/gm, '<h3>$1</h3>')
+    .replace(/\n\| (.*)/g, (m) => m)
+    .replace(/\|(.+)\|/g, (match) => {
+      const cells = match.split('|').filter(c => c.trim());
+      return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    })
+    .replace(/(<tr>.*<\/tr>\n?)+/g, (block) => {
+      const rows = block.trim().split('\n').filter(r => r.includes('<tr>'));
+      if (rows.length > 0) {
+        const first = rows[0].replace(/<td>/g,'<th>').replace(/<\/td>/g,'</th>');
+        const rest = rows.slice(2).join('\n');
+        return `<table><thead>${first}</thead><tbody>${rest}</tbody></table>`;
+      }
+      return block;
+    })
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[h|u|t|l])/gm, '')
+    .split('\n').map(line => {
+      if (!line.startsWith('<')) return `<p>${line}</p>`;
+      return line;
+    }).join('');
+}
+
+function renderMarkdown(text) {
+  // Simple but effective renderer
+  let html = text;
+  // Tables
+  html = html.replace(/(\|.*\|\n?)+/g, (tableBlock) => {
+    const rows = tableBlock.trim().split('\n').filter(r => r.includes('|'));
+    if (rows.length < 2) return tableBlock;
+    let out = '<table>';
+    rows.forEach((row, i) => {
+      if (row.replace(/[\|\-\s]/g,'').length === 0) return;
+      const cells = row.split('|').map(c=>c.trim()).filter(c=>c);
+      if (i === 0) out += '<thead><tr>' + cells.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+      else out += '<tr>' + cells.map(c=>`<td>${c}</td>`).join('') + '</tr>';
+    });
+    out += '</tbody></table>';
+    return out;
+  });
+  // Headers
+  html = html.replace(/^#### (.+)$/gm,'<h3>$1</h3>');
+  html = html.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm,'<h2>$1</h2>');
+  // Bold/italic
+  html = html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Lists
+  html = html.replace(/^[\-\•] (.+)$/gm,'<li>$1</li>');
+  html = html.replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>');
+  // Line breaks
+  html = html.replace(/\n\n/g,'<br><br>');
+  html = html.replace(/\n/g,'<br>');
+  return html;
+}
+
+async function analyzeFinancials() {
+  const company = document.getElementById('fin-company').value.trim();
+  const sector = document.getElementById('fin-sector').value.trim();
+  const currency = document.getElementById('fin-currency').value.trim();
+  const period = document.getElementById('fin-period').value.trim();
+  const data = document.getElementById('fin-data').value.trim();
+  if (!data) return alert('Please paste financial data first.');
+  const tabNames = { income: 'Income Statement', balance: 'Balance Sheet', cashflow: 'Cash Flow Statement', all: 'Complete Financial Statements' };
+  const prompt = `Perform a comprehensive ${tabNames[currentFinTab]} analysis for the following:
+
+Company: ${company || 'Not specified'}
+Sector/Industry: ${sector || 'Not specified'}
+Currency/Unit: ${currency || 'Not specified'}
+Period: ${period || 'Not specified'}
+
+FINANCIAL DATA:
+${data}
+
+Provide a full sell-side analyst quality analysis. Calculate all relevant ratios. Flag any red flags or accounting concerns. Provide specific, data-backed insights — not generic commentary. Structure your response with the standard EquiSight output format.`;
+
+  const out = document.getElementById('analysis-output');
+  const loading = document.getElementById('analysis-loading');
+  const result = document.getElementById('analysis-result');
+  out.classList.add('visible');
+  loading.style.display = 'block';
+  result.innerHTML = '';
+  document.getElementById('fin-btn').disabled = true;
+
+  try {
+    const text = await callGemini(prompt);
+    result.innerHTML = renderMarkdown(text);
+  } catch(e) {
+    result.innerHTML = `<p style="color:var(--red)">Error: ${e.message}</p>`;
+  } finally {
+    loading.style.display = 'none';
+    document.getElementById('fin-btn').disabled = false;
+  }
+}
+
+async function compareStocks() {
+  const sector = document.getElementById('cmp-sector').value.trim();
+  const currency = document.getElementById('cmp-currency').value.trim();
+  const context = document.getElementById('cmp-context').value.trim();
+  const stocks = [];
+  for (let i=0; i<stockCount; i++) {
+    const el = document.getElementById('s'+i);
+    if (el && el.value.trim()) stocks.push(el.value.trim());
+  }
+  if (stocks.length < 2) return alert('Add at least 2 stocks to compare.');
+
+  const prompt = `Perform a comprehensive comparative stock analysis for the following companies in the ${sector || 'given'} sector (${currency || ''}):
+
+STOCKS TO COMPARE:
+${stocks.map((s,i) => `${i+1}. ${s}`).join('\n')}
+
+${context ? `INVESTMENT QUESTION / FOCUS: ${context}` : ''}
+
+Build a side-by-side comparison table covering all key metrics (Revenue, Revenue Growth, Gross Margin, EBITDA Margin, Net Margin, EPS, P/E, P/S, EV/EBITDA, ROE, ROCE, D/E, FCF Yield — use whatever data is available). Assess competitive positioning, relative valuation, and provide a clear investment ranking with justified BUY/HOLD/SELL on each. Use the standard EquiSight output format.`;
+
+  const out = document.getElementById('compare-output');
+  const loading = document.getElementById('compare-loading');
+  const result = document.getElementById('compare-result');
+  out.classList.add('visible');
+  loading.style.display = 'block';
+  result.innerHTML = '';
+  document.getElementById('cmp-btn').disabled = true;
+
+  try {
+    const text = await callGemini(prompt);
+    result.innerHTML = renderMarkdown(text);
+  } catch(e) {
+    result.innerHTML = `<p style="color:var(--red)">Error: ${e.message}</p>`;
+  } finally {
+    loading.style.display = 'none';
+    document.getElementById('cmp-btn').disabled = false;
+  }
+}
+
+async function runAnalyst() {
+  const stock = document.getElementById('an-stock').value.trim();
+  const type = document.getElementById('an-type').value;
+  const data = document.getElementById('an-data').value.trim();
+  if (!stock) return alert('Please enter a stock or topic.');
+
+  const typePrompts = {
+    full: `Construct a complete investment thesis for ${stock} with Bull Case, Base Case, and Bear Case scenarios. Include MOAT assessment, valuation commentary, and a 12-month outlook.`,
+    moat: `Perform a detailed Economic MOAT analysis for ${stock} using Porter's Five Forces. Assess whether the moat is Wide, Narrow, or None. Identify key competitive advantages and threats to the moat.`,
+    valuation: `Provide a comprehensive valuation commentary for ${stock}. Assess current trading multiples vs. historical averages and peers. Comment on DCF assumptions, intrinsic value, and whether the stock is cheap, fair, or expensive.`,
+    redflag: `Perform a thorough red flag and risk scan for ${stock}. Look for: aggressive accounting, working capital deterioration, debt concerns, governance issues, margin compression, and any other yellow/red flags in the available data.`,
+    sector: `Provide a deep-dive sector analysis for the sector/industry of ${stock}. Cover: sector tailwinds/headwinds, key players, regulatory environment, valuation norms, and where ${stock} sits competitively.`,
+    'compare-quick': `Quickly compare ${stock} with its 2-3 closest peers. Build a comparison table and state which is the best investment opportunity right now and why.`
+  };
+
+  const prompt = `${typePrompts[type]}
+
+${data ? `AVAILABLE DATA / CONTEXT:\n${data}` : 'Use your knowledge of the company and publicly available information.'}
+
+Provide sell-side quality analysis using the standard EquiSight output format.`;
+
+  const out = document.getElementById('analyst-output');
+  const loading = document.getElementById('analyst-loading');
+  const result = document.getElementById('analyst-result');
+  out.classList.add('visible');
+  loading.style.display = 'block';
+  result.innerHTML = '';
+  document.getElementById('an-btn').disabled = true;
+
+  try {
+    const text = await callGemini(prompt);
+    result.innerHTML = renderMarkdown(text);
+  } catch(e) {
+    result.innerHTML = `<p style="color:var(--red)">Error: ${e.message}</p>`;
+  } finally {
+    loading.style.display = 'none';
+    document.getElementById('an-btn').disabled = false;
+  }
+}
+
+// CHAT
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  input.style.height = 'auto';
+  appendChat('user', msg);
+  document.getElementById('chat-send-btn').disabled = true;
+
+  // Show typing
+  const typingId = 'typing-' + Date.now();
+  const typingEl = document.createElement('div');
+  typingEl.className = 'chat-msg ai';
+  typingEl.id = typingId;
+  typingEl.innerHTML = `<div class="chat-sender">EquiSight AI</div><div class="chat-bubble" style="color:var(--text3);font-family:var(--mono);font-size:12px">Analyzing<span id="dots">...</span></div>`;
+  document.getElementById('chat-messages').appendChild(typingEl);
+  scrollChat();
+
+  let dotsInterval = setInterval(() => {
+    const d = document.getElementById('dots');
+    if (d) d.textContent = d.textContent.length >= 6 ? '.' : d.textContent + '.';
+  }, 400);
+
+  // Build conversation context
+  chatHistory.push({ role: 'user', content: msg });
+
+  const fullPrompt = SYSTEM_PROMPT + '\n\n--- CONVERSATION HISTORY ---\n' +
+    chatHistory.slice(-10).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n') +
+    '\n\nASSISTANT:';
+
+  try {
+    const text = await callGemini(fullPrompt);
+    chatHistory.push({ role: 'assistant', content: text });
+    clearInterval(dotsInterval);
+    document.getElementById(typingId)?.remove();
+    appendChat('ai', renderMarkdown(text));
+  } catch(e) {
+    clearInterval(dotsInterval);
+    document.getElementById(typingId)?.remove();
+    appendChat('ai', `<p style="color:var(--red)">Error: ${e.message}</p>`);
+  } finally {
+    document.getElementById('chat-send-btn').disabled = false;
+  }
+}
+
+function appendChat(role, content) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  const sender = role === 'user' ? 'You' : 'EquiSight AI — Senior Equity Research Analyst';
+  div.innerHTML = `<div class="chat-sender">${sender}</div><div class="chat-bubble">${content}</div>`;
+  msgs.appendChild(div);
+  scrollChat();
+}
+function scrollChat() {
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function chatKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+</script>
+</body>
+</html>
